@@ -37,4 +37,49 @@ apiGet.get(
     res.json({ Teachers });
   }
 );
+apiGet.get(
+  "/api/get/teachers/getCountsPerAgeOfMaleTeachersAndSortInDESC",
+  async (req, res) => {
+    const Teachers = await Teacher.aggregate([
+      { $match: { gender: "male" } },
+      { $group: { _id: "$age", numberOfTeachers: { $sum: 1 } } },
+      { $sort: { numberOfTeachers: -1 } },
+    ]);
+    res.json({ Teachers });
+  }
+);
+apiGet.get(
+  "/api/get/teachers/getMaxCountsPerAgeOfMaleTeachersAndSortInDESC",
+  async (req, res) => {
+    const Teachers = await Teacher.aggregate([
+      { $match: { gender: "male" } },
+      { $group: { _id: "$age", numberOfTeachers: { $sum: 1 } } },
+      { $sort: { numberOfTeachers: -1 } },
+      {
+        $group: {
+          _id: null,
+          maxNumberInAgeGroup: { $max: "$numberOfTeachers" },
+        },
+      },
+    ]);
+    res.json({ Teachers });
+  }
+);
+// sum of ages in each age group
+apiGet.get("/api/get/teachers/sumOfAgesInEachAgeGroup", async (req, res) => {
+  const sumOfAges = await Teacher.aggregate([
+    {
+      $group: {
+        _id: "$age",
+        sumOfAges: { $sum: { $toDouble: "$age" } },
+      },
+    },
+  ]);
+  res.json({
+    sumOfAges,
+  });
+});
+// students
+
+// find hobbies per age group
 module.exports = apiGet;
