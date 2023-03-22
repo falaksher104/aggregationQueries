@@ -3,6 +3,7 @@ const apiGet = express.Router();
 const Teacher = require("../../models/teachers");
 const Student = require("../../models/students");
 const Employee = require("../../models/employee");
+const Order = require("../../models/orders");
 
 apiGet.get("/api/get/teachers/male", async (req, res) => {
   const maleTeachers = await Teacher.aggregate([
@@ -186,5 +187,46 @@ apiGet.get("/api/employee/get", async (req, res) => {
     },
   ]);
   res.json({ employees });
+});
+
+apiGet.get("/api/getData", async (req, res) => {
+  // const data = await Student.find();
+  // update field value
+  // const data = await Student.updateOne(
+  //   {
+  //     _id: "641414083a70b212ac7ed0fc",
+  //   },
+  //   { hasMacBook: "false" }
+  // );
+  //get condition field
+  // const data = await Student.find({ hasMacBook: true });
+  // const data = await Student.find({ hobbies: "Programming" });
+  // const data = await Student.find({ experience: { $exists: true } });
+  // const data = await Student.find({
+  //   $and: [{ hobbies: "Programming", age: { $gte: 22 }, name: "Aqsa" }],
+  // });
+  // const data = await Student.updateMany({ $rename: { hobbies: "Hobbies" } });
+  // const data = await Student.updateMany({}, { $unset: { hobbies: 423421 } });
+
+  // const data = await Student.find({ experience: { $size: 2 } });
+  const data = await Student.find({ Hobbies: "Walking" }).count();
+  res.json({ data });
+});
+
+// orders
+apiGet.get("/api/getCompletedOrders", async (req, res) => {
+  const completedOrders = await Order.aggregate([
+    { $match: { status: "Completed" } },
+  ]);
+  res.json({ completedOrders });
+});
+apiGet.get("/api/getCompletedOrdersSales", async (req, res) => {
+  const completedOrders = await Order.aggregate([
+    { $match: { status: "Completed" } },
+    { $group: { _id: "$categoryName", totalPrice: { $sum: "$price" } } },
+    { $project: { categoryName: "$_id", totalPrice: 1, _id: 0 } },
+    { $sort: { totalPrice: 1 } },
+  ]);
+  res.json({ completedOrders });
 });
 module.exports = apiGet;
