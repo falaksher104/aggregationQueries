@@ -4,6 +4,9 @@ const Teacher = require("../../models/teachers");
 const Student = require("../../models/students");
 const Employee = require("../../models/employee");
 const Order = require("../../models/orders");
+const Sale = require("../../models/sales");
+const Score = require("../../models/scores");
+const Furniture = require("../../models/furnitures");
 
 apiGet.get("/api/get/teachers/male", async (req, res) => {
   const maleTeachers = await Teacher.aggregate([
@@ -228,5 +231,95 @@ apiGet.get("/api/getCompletedOrdersSales", async (req, res) => {
     { $sort: { totalPrice: 1 } },
   ]);
   res.json({ completedOrders });
+});
+//Example : Using $match and $group to find the total sales for each product in a given date range
+apiGet.get("/api/sales/get", async (req, res) => {
+  const sales = await Sale.aggregate([
+    {
+      $match: {
+        date: { $gte: new Date("2022-01-01"), $lt: new Date("2023-03-01") },
+      },
+    },
+    { $group: { _id: "$product", totalSales: { $sum: "$amount" } } },
+    { $project: { productName: "$_id", totalSales: 1, _id: 0 } },
+  ]);
+  res.json({ sales });
+});
+//Example : Using $match and $group to find the total sales for each product  current & previous month sales
+apiGet.get("/api/sales/get/prevAndCurr", async (req, res) => {
+  const date = new Date();
+  const currentMonth = date.getMonth();
+  const previousMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+  const currentMonthSales = await Sale.aggregate([
+    {
+      $match: {
+        date: {
+          $gte: new Date(date.getFullYear(), currentMonth, 1),
+          $lt: new Date(date.getFullYear(), currentMonth + 1, 1),
+        },
+      },
+    },
+    { $group: { _id: "$product", totalSales: { $sum: "$amount" } } },
+    { $project: { _id: 0, totalSales: 1, productName: "$_id" } },
+  ]);
+  const previousMonthSales = await Sale.aggregate([
+    {
+      $match: {
+        date: {
+          $gte: new Date(date.getFullYear(), previousMonth, 1),
+          $lt: new Date(date.getFullYear(), previousMonth + 1, 1),
+        },
+      },
+    },
+    {
+      $group: { _id: "$product", totalSales: { $sum: "$amount" } },
+    },
+    { $project: { _id: 0, totalSales: 1, productName: "$_id" } },
+  ]);
+  res.json({ currentMonthSales, previousMonthSales });
+});
+
+// scores
+apiGet.get("/api/scores/students/avg", async (req, res) => {
+  const avgScore = await Score.aggregate([
+    { $unwind: "$scores" },
+    {
+      $group: {
+        _id: { class: "$classId", student: "$studentId" },
+        avgScores: { $avg: "$scores" },
+      },
+    },
+    {
+      $project: {
+        studentId: "$_id.student",
+        classId: "$_id.class",
+        _id: 0,
+        avgScores: 1,
+      },
+    },
+  ]);
+  res.json({ avgScore });
+});
+// find max avg score of student
+apiGet.get("/api/scores/maxValue", async (req, res) => {
+  const maxAvgScore = await Score.aggregate([
+    { $unwind: "$scores" },
+    {
+      $group: {
+        _id: { class: "$classId", student: "$studentId" },
+        avgScores: { $avg: "$scores" },
+      },
+    },
+    {
+      $sort: { avgScores: 1 },
+    },
+    {
+      $group: { _id: null, maxValue: { $max: "$avgScores" } },
+    },
+    {
+      $project: { _id: 0, maxValue: 1 },
+    },
+  ]);
+  res.json({ maxAvgScore });
 });
 module.exports = apiGet;

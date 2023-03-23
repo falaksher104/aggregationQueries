@@ -4,6 +4,10 @@ const Teacher = require("../../models/teachers");
 const Student = require("../../models/students");
 const Employee = require("../../models/employee");
 const Order = require("../../models/orders");
+const Sale = require("../../models/sales");
+const Score = require("../../models/scores");
+const Furniture = require("../../models/furnitures");
+
 apiPost.post("/api/teachers/new", async (req, res) => {
   const { name, age, gender } = req.body;
   const teacher = await Teacher.create({
@@ -44,5 +48,35 @@ apiPost.post("/api/orders/new", async (req, res) => {
     status,
   });
   res.json({ order });
+});
+
+apiPost.post("/api/sales/new", async (req, res) => {
+  const { product, amount, date } = req.body;
+  const sale = await Sale.create({
+    product,
+    amount,
+    date,
+  });
+  res.json({ sale });
+});
+apiPost.post("/api/scores/student/new", async (req, res) => {
+  const { classId, studentId, scores } = req.body;
+  const studentScores = await Score.create({
+    classId,
+    studentId,
+    scores,
+  });
+  res.json({ studentScores });
+});
+//Furniture
+apiPost.post("/api/furniture", async (req, res) => {
+  const { name, price, countryName, quantity } = req.body;
+  const furniture = await Furniture.create({
+    name,
+    price,
+    countryName,
+    quantity,
+  });
+  res.json({ furniture, success: true });
 });
 module.exports = apiPost;
