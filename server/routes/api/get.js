@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const apiGet = express.Router();
 const Teacher = require("../../models/teachers");
 const Student = require("../../models/students");
@@ -7,6 +8,7 @@ const Order = require("../../models/orders");
 const Sale = require("../../models/sales");
 const Score = require("../../models/scores");
 const Furniture = require("../../models/furnitures");
+const Note = require("../../models/multipleJoins/notes");
 
 apiGet.get("/api/get/teachers/male", async (req, res) => {
   const maleTeachers = await Teacher.aggregate([
@@ -321,5 +323,77 @@ apiGet.get("/api/scores/maxValue", async (req, res) => {
     },
   ]);
   res.json({ maxAvgScore });
+});
+
+// furniture
+apiGet.get("/api/furniture/getData", async (req, res) => {
+  const data = await Furniture.aggregate([
+    {
+      $group: {
+        _id: "$countryName",
+        totalPrice: { $sum: { $multiply: ["$quantity", "$price"] } },
+        names: { $addToSet: "$name" },
+      },
+    },
+    {
+      $project: { _id: 0, countryName: "$_id", totalPrice: 1, names: 1 },
+    },
+  ]);
+  res.json({ data });
+});
+
+// get user notes using aggregation $lookup
+
+apiGet.get("/api/user/notes/get", async (req, res) => {
+  const userNotes = await Note.aggregate([
+    {
+      $match: {
+        userId: mongoose.Types.ObjectId("641d87eea37e7a1124c023b5"),
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "usernotes",
+      },
+    },
+
+    {
+      $project: {
+        title: 1,
+        description: 1,
+        emailAddress: "$usernotes.emailAddress",
+      },
+    },
+  ]);
+  res.json({ userNotes });
+});
+
+// get
+apiGet.get("/api/user/location/notes", async (req, res) => {
+  const notes = await Note.aggregate([
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    { $match: { "user.location": "Faisalabad" } },
+    {
+      $project: {
+        title: 1,
+        description: 1,
+
+        _id: 0,
+        location: "$user.location",
+        userName: "$user.name",
+      },
+    },
+  ]);
+  res.json({ notes });
 });
 module.exports = apiGet;

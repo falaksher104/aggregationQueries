@@ -7,6 +7,8 @@ const Order = require("../../models/orders");
 const Sale = require("../../models/sales");
 const Score = require("../../models/scores");
 const Furniture = require("../../models/furnitures");
+const User = require("../../models/multipleJoins/users");
+const Note = require("../../models/multipleJoins/notes");
 
 apiPost.post("/api/teachers/new", async (req, res) => {
   const { name, age, gender } = req.body;
@@ -78,5 +80,25 @@ apiPost.post("/api/furniture", async (req, res) => {
     quantity,
   });
   res.json({ furniture, success: true });
+});
+// create user
+apiPost.post("/api/user/new", async (req, res) => {
+  const { name, emailAddress, location } = req.body;
+  const user = await User.create({
+    name,
+    emailAddress,
+    location,
+  });
+  res.json({ user });
+});
+// create notes of user
+apiPost.post("/api/user/notes/create", async (req, res) => {
+  const { userId, title, description } = req.body;
+  const note = await Note.create({
+    userId,
+    title,
+    description,
+  });
+  res.json({ note });
 });
 module.exports = apiPost;
