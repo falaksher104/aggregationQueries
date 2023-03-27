@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const apiGet = express.Router();
 
 const User = require("../../models/users");
@@ -53,7 +54,27 @@ apiGet.get("/api/orders/get/locationWiseOrder", async (req, res) => {
       },
     },
     {
+      $lookup: {
+        from: "products",
+        localField: "productId",
+        foreignField: "_id",
+        as: "product",
+      },
+    },
+    {
       $group: { _id: "$user.location", orderList: { $push: "$$ROOT" } },
+    },
+    {
+      $project: {
+        _id: 0,
+        location: "$_id",
+        orderList: 1,
+        userName: "$orderList.user.name",
+        userEmailAddress: "$orderList.user.emailAddress",
+        productName: "$orderList.product.name",
+        productPrice: "$orderList.product.price",
+        productQuantity: "$orderList.quantity",
+      },
     },
   ]);
   res.json({
@@ -61,4 +82,88 @@ apiGet.get("/api/orders/get/locationWiseOrder", async (req, res) => {
   });
 });
 
+// Question # 03
+// get quantity wise orders (asending order)
+
+apiGet.get("/api/orders/get/quantityWiseOrder", async (req, res) => {
+  const quantityWiseOrder = await Order.aggregate([
+    {
+      $sort: { quantity: 1 },
+    },
+  ]);
+  res.json({ quantityWiseOrder });
+});
+
+// Question # 04
+// get single user orders
+
+apiGet.get("/api/orders/get/userOrders", async (req, res) => {
+  const singleUserOrders = await Order.aggregate([
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    {
+      $lookup: {
+        from: "products",
+        localField: "productId",
+        foreignField: "_id",
+        as: "product",
+      },
+    },
+    {
+      $match: { userId: mongoose.Types.ObjectId("6420265b953b5615dce4b81c") },
+    },
+    {
+      $project: {
+        _id: 0,
+        location: "$_id",
+        orderList: 1,
+        userName: "$user.name",
+        userEmailAddress: "$user.emailAddress",
+        productName: "$product.name",
+        productPrice: "$product.price",
+        productQuantity: "$quantity",
+        totalPrice: {
+          $multiply: ["$quantity", { $arrayElemAt: ["$product.price", 0] }],
+        },
+      },
+    },
+  ]);
+  res.json({ singleUserOrders });
+});
+
+// Question # 05
+// Get product minimum price to maximum price
+apiGet.get("/api/orders/get/categoryWiseOrder", async (req, res) => {
+  const categoryWiseOrders = await Order.aggregate([
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    {
+      $lookup: {
+        from: "products",
+        localField: "productId",
+        foreignField: "_id",
+        as: "product",
+      },
+    },
+    {
+      $group: {
+        _id: "$product.category",
+        orders: { $push: "$$ROOT" },
+      },
+    },
+  ]);
+  res.json({ categoryWiseOrders });
+});
 module.exports = apiGet;
