@@ -387,7 +387,6 @@ apiGet.get("/api/user/location/notes", async (req, res) => {
       $project: {
         title: 1,
         description: 1,
-
         _id: 0,
         location: "$user.location",
         userName: "$user.name",
