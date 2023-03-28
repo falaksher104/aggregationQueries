@@ -2,8 +2,6 @@ const express = require("express");
 const mongoose = require("mongoose");
 const apiGet = express.Router();
 
-// const User = require("../../models/users");
-// const Product = require("../../models/products");
 const Order = require("../../models/orders");
 
 // Question # 1
@@ -257,24 +255,7 @@ apiGet.get("/api/orders/get/productWiseOrders", async (req, res) => {
       },
     },
   ]);
-  // const array = [];
-  // productWiseOrders.forEach((element) => {
-  //   array.push({ productName: element._id[0] }),
-  //     element.orders.forEach((elem) => {
-  //       array.push({
-  //         test: {
-  //           productPrice: elem.productPrice[0],
-  //           quantity: elem.quantity,
-  //           totalPrice: elem.totalPrice,
-  //           userName: elem.userName[0],
-  //           userEmailAddress: elem.userEmailAddress[0],
-  //         },
-  //       });
-  //     });
-  // });
-  // console.log({ array });
 
-  // res.json({ array });
   res.json({ productWiseOrders });
 });
 
