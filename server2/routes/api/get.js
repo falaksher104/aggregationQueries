@@ -2,8 +2,8 @@ const express = require("express");
 const mongoose = require("mongoose");
 const apiGet = express.Router();
 
-const User = require("../../models/users");
-const Product = require("../../models/products");
+// const User = require("../../models/users");
+// const Product = require("../../models/products");
 const Order = require("../../models/orders");
 
 // Question # 1
@@ -139,6 +139,7 @@ apiGet.get("/api/orders/get/userOrders", async (req, res) => {
 
 // Question # 05
 // Get product minimum price to maximum price
+
 apiGet.get("/api/orders/get/categoryWiseOrder", async (req, res) => {
   const categoryWiseOrders = await Order.aggregate([
     {
@@ -160,10 +161,121 @@ apiGet.get("/api/orders/get/categoryWiseOrder", async (req, res) => {
     {
       $group: {
         _id: "$product.category",
-        orders: { $push: "$$ROOT" },
+        orders: {
+          $push: {
+            categoryName: "$product.category",
+            productName: "$product.name",
+            productPrice: "$product.price",
+            userName: "$user.name",
+            quantity: "$quantity",
+            totalPrice: {
+              $multiply: ["$quantity", { $arrayElemAt: ["$product.price", 0] }],
+            },
+          },
+        },
       },
     },
   ]);
   res.json({ categoryWiseOrders });
 });
+
+// Question # 06
+// Get the data in between price (Lower to higher price) of the specific category products (as like : Android)
+
+apiGet.get("/api/orders/get/matchCategoryWithPriceRange", async (req, res) => {
+  const priceRangeOrders = await Order.aggregate([
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    {
+      $lookup: {
+        from: "products",
+        localField: "productId",
+        foreignField: "_id",
+        as: "product",
+      },
+    },
+
+    {
+      $match: {
+        $and: [
+          { "product.category": "Cosmetics" },
+          { "product.price": { $gt: 5, $lt: 15 } },
+        ],
+      },
+    },
+    {
+      $sort: { "product.price": 1 },
+    },
+  ]);
+  res.json({ priceRangeOrders });
+});
+
+// Question # 07
+// get data to find how many orders on a single product
+
+apiGet.get("/api/orders/get/productWiseOrders", async (req, res) => {
+  const productWiseOrders = await Order.aggregate([
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    {
+      $lookup: {
+        from: "products",
+        localField: "productId",
+        foreignField: "_id",
+        as: "product",
+      },
+    },
+    {
+      $group: {
+        _id: "$product.name",
+        orders: {
+          $push: {
+            categoryName: "$product.category",
+            productName: "$product.name",
+            productPrice: "$product.price",
+            userName: "$user.name",
+            quantity: "$quantity",
+            totalPrice: {
+              $multiply: ["$quantity", { $arrayElemAt: ["$product.price", 0] }],
+            },
+            userName: "$user.name",
+            userEmailAddress: "$user.emailAddress",
+          },
+        },
+      },
+    },
+  ]);
+  // const array = [];
+  // productWiseOrders.forEach((element) => {
+  //   array.push({ productName: element._id[0] }),
+  //     element.orders.forEach((elem) => {
+  //       array.push({
+  //         test: {
+  //           productPrice: elem.productPrice[0],
+  //           quantity: elem.quantity,
+  //           totalPrice: elem.totalPrice,
+  //           userName: elem.userName[0],
+  //           userEmailAddress: elem.userEmailAddress[0],
+  //         },
+  //       });
+  //     });
+  // });
+  // console.log({ array });
+
+  // res.json({ array });
+  res.json({ productWiseOrders });
+});
+
 module.exports = apiGet;
